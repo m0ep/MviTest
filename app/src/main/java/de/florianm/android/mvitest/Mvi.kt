@@ -4,11 +4,17 @@ import io.reactivex.Observable
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+interface MviState
+
+/**
+ * Interface that all event for MVI must implement.
+ */
 interface MviEvent
 
+
 @FunctionalInterface
-interface MviEventProcessor {
-    fun process(event: MviEvent): Observable<MviResult>
+interface MviEventProcessor<EventT : MviEvent> {
+    fun process(event: EventT): Observable<MviResult>
 }
 
 /**
@@ -21,10 +27,10 @@ sealed class MviResult {
      *
      * @param StateT Type of the state that should be changed.
      */
-    abstract class MviStateChange<StateT> : MviResult() {
+    abstract class MviStateChange<StateT : MviState> : MviResult() {
 
         /**
-         * Base class for MVI results that change the state of the UI.
+         * Apply the change to the supplied state.
          *
          * @param state The state to change
          *
@@ -33,9 +39,11 @@ sealed class MviResult {
         abstract fun applyChange(state: StateT): StateT
     }
 
-    abstract class MviEffect : MviResult() {
-        abstract fun apply()
-    }
+    /**
+     * Base class for result who don't affect the state.
+     * E.g. toast messages or navigation instructions.
+     */
+    abstract class MviEffect : MviResult()
 }
 
 object Mvi {
@@ -54,7 +62,7 @@ object Mvi {
      */
     @JvmStatic
     @JvmOverloads
-    fun <StateT : Any, StateChangeableT : MviResult.MviStateChange<StateT>> Observable<StateChangeableT>.stateReducer(
+    fun <StateT : MviState, StateChangeableT : MviResult.MviStateChange<StateT>> Observable<StateChangeableT>.stateReducer(
         initialState: StateT,
         logger: Logger = LOG
     ): Observable<StateT> {

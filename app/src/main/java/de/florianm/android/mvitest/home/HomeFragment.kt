@@ -38,7 +38,9 @@ class HomeFragment : Fragment() {
         })
 
         disposable.add(viewModel.effectObservable.subscribe {
-            it.apply()
+            when(it){
+                is ToastEffect -> it.show()
+            }
         })
 
         btn_plus_one.setOnClickListener { viewModel.onPlusOneClicked() }
